@@ -40,6 +40,7 @@ LCD_get_reg_bases(__reg_bases_t *para)
 }
 EXPORT_SYMBOL(LCD_get_reg_bases);
 
+#ifndef CONFIG_SUNXI_LCD_CHECK_DISABLE
 static void
 Lcd_Panel_Parameter_Check(__u32 sel)
 {
@@ -240,6 +241,7 @@ Lcd_Panel_Parameter_Check(__u32 sel)
 		       "**********\n");
 	}
 }
+#endif
 
 static __s32
 LCD_get_panel_para(__u32 sel, __panel_para_t *info)
@@ -1612,7 +1614,9 @@ __s32 BSP_disp_lcd_open_after(__u32 sel)
 	gdisp.screen[sel].b_out_interlace = 0;
 	gdisp.screen[sel].status |= LCD_ON;
 	gdisp.screen[sel].output_type = DISP_OUTPUT_TYPE_LCD;
+#ifndef CONFIG_SUNXI_LCD_CHECK_DISABLE
 	Lcd_Panel_Parameter_Check(sel);
+#endif
 #ifdef CONFIG_ARCH_SUN5I
 	Disp_drc_enable(sel, TRUE);
 #endif

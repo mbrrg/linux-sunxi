@@ -48,6 +48,12 @@ config LYCHEE_LCD_SUN5I
         ---help---
         default m
 
+config SUNXI_LCD_CHECK_DISABLE
+	bool "Disable LCD parameter check"
+	depends on FB_SUNXI_LCD
+	---help---
+	default n
+
 config FB_SUNXI_LCD
         tristate
 
