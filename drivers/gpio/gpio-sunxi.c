@@ -61,11 +61,15 @@ static int sunxi_find_gpio_irq(struct gpio_chip *chip, unsigned offset)
 	struct sunxi_gpio_chip *sgpio = to_sunxi_gpio(chip);
 
 	/* search port:pin in the eint list */
-	pp = sgpio->data[offset].info.port-1;
-	pi = sgpio->data[offset].info.port_num;
-	for (i = 0;; i++) {
-		if (gpio_eint_list[i].port < 0)
-			break;
+        pp = sgpio->data[offset].info.port-1;
+        pi = sgpio->data[offset].info.port_num;
+
+        for (i = 0;; i++) {
+       		if ((gpio_eint_list[i].port < 0) &&
+                    (gpio_eint_list[i].pin < 0) &&
+                    (gpio_eint_list[i].mux < 0) &&
+                    (gpio_eint_list[i].gpio < 0))
+                         break;
 
 		/* Table contain EINT_NUM sources */
 		if ((gpio_eint_list[i].port == pp) &&
