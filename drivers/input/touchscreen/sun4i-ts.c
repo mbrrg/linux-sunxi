@@ -306,6 +306,8 @@ static int tp_press_threshold_enable = 0;
 static int tp_press_threshold = 0; //usded to adjust sensitivity of touch
 static int tp_sensitive_level = 0; //used to adjust sensitivity of pen down detection
 static int tp_exchange_x_y = 0;
+static int tp_screen_width_pixels = 0;
+static int tp_invert_x = 0;
 
 #define ZOOM_IN_OUT_BUFFER_SIZE_TIMES (2)
 #define ZOOM_IN_OUT_BUFFER_SIZE (1<<ZOOM_IN_OUT_BUFFER_SIZE_TIMES)
@@ -478,7 +480,11 @@ static void backup_transfered_data(struct ts_sample_data *sample_data)
 
 static void report_single_point_implement(struct sun4i_ts_data *ts_data, struct ts_sample_data *sample_data)
 {
-    input_report_abs(ts_data->input, ABS_MT_TOUCH_MAJOR,800);
+    print_report_data_info("report single point (original): x = %d,sample_data->y = %d. \n", sample_data->x, sample_data->y);
+ 
+    sample_data->x = tp_invert_x ? 4095 - sample_data->x : sample_data->x;
+
+    input_report_abs(ts_data->input, ABS_MT_TOUCH_MAJOR, tp_screen_width_pixels);
     input_report_abs(ts_data->input, ABS_MT_POSITION_X, sample_data->x);
     input_report_abs(ts_data->input, ABS_MT_POSITION_Y, sample_data->y);
 /*
@@ -1084,12 +1090,12 @@ static void report_double_point(struct sun4i_ts_data *ts_data, struct ts_sample_
         	}
        }
 
-        input_report_abs(ts_data->input, ABS_MT_TOUCH_MAJOR,800);
+        input_report_abs(ts_data->input, ABS_MT_TOUCH_MAJOR, tp_screen_width_pixels);
 	input_report_abs(ts_data->input, ABS_MT_POSITION_X, x1);
 	input_report_abs(ts_data->input, ABS_MT_POSITION_Y, y1);
 	input_mt_sync(ts_data->input);
 
-	input_report_abs(ts_data->input, ABS_MT_TOUCH_MAJOR,800);
+	input_report_abs(ts_data->input, ABS_MT_TOUCH_MAJOR, tp_screen_width_pixels);
 	input_report_abs(ts_data->input, ABS_MT_POSITION_X, x2);
 	input_report_abs(ts_data->input, ABS_MT_POSITION_Y, y2);
 	input_mt_sync(ts_data->input);
@@ -1781,17 +1787,31 @@ static int __init sun4i_ts_init(void)
 	    }
 	    printk("sun4i-ts: tp_screen_size is %d inch.\n", tp_screen_size);
 	    if(7 == tp_screen_size){
-                dual_touch_distance = 20;
-                glide_delta_ds_max_limit = 90;
-                tp_regidity_level = 7;
-      }else if(5 == tp_screen_size){
-          dual_touch_distance = 35;
-          glide_delta_ds_max_limit = 150;
-          tp_regidity_level = 5;
-      }else{
-          pr_err("sun4i-ts: tp_screen_size is not supported. \n");
-          goto script_parser_fetch_err;
-      }
+			dual_touch_distance = 20;
+          	glide_delta_ds_max_limit = 90;
+            tp_regidity_level = 7;
+			tp_screen_width_pixels = 800;
+      	}else if(5 == tp_screen_size){
+         	dual_touch_distance = 35;
+          	glide_delta_ds_max_limit = 150;
+          	tp_regidity_level = 5;
+			tp_screen_width_pixels = 800;
+      	}else if (4 == tp_screen_size){
+			dual_touch_distance = 35;
+			glide_delta_ds_max_limit = 150;
+			tp_regidity_level = 5;
+			tp_screen_width_pixels = 480;
+		}else{
+        	pr_err("sun4i-ts: tp_screen_size is not supported. \n");
+         	goto script_parser_fetch_err;
+      	}
+
+		printk("sun4i-ts: tp_screen_width_pixels is %d.\n", tp_screen_width_pixels);
+
+		if(SCRIPT_PARSER_OK != script_parser_fetch("rtp_para", "rtp_invert_x", &tp_invert_x, 1)){
+			pr_err("sun4i_ts_init: script_parser_fetch err rtp_para. \n");
+			goto script_parser_fetch_err;
+		}
 
             if(SCRIPT_PARSER_OK != script_parser_fetch("rtp_para", "rtp_regidity_level", &tp_regidity_level, 1)){
                 pr_err("sun4i_ts_init: script_parser_fetch err rtp_regidity_level. \n");
